@@ -15,10 +15,8 @@ from typing import Any, Generic, Hashable, Iterator, TypeVar, list
 
 import numpy as np
 
-MoveType = TypeVar('MoveType', bound=Hashable)
 
-
-class State(Generic[MoveType], ABC, Hashable):
+class State(ABC, Hashable):
     """
     The State class is an abstract base class
     for representing the state of a game.
@@ -60,12 +58,79 @@ class State(Generic[MoveType], ABC, Hashable):
         raise NotImplementedError
 
 
+MoveType = TypeVar('MoveType', bound=Hashable)
+
 StateType = TypeVar("StateType", bound=State)
 
 
 class Game(Generic[MoveType, StateType], ABC, Hashable):
+    """
+    The Game class is an abstract base class
+    for representing a one-player, perfect information,
+    abstract strategy game.
 
-    @classmethod
+    This class should be subclassed, and the un-underscored
+    methods should be implemented. The underscored methods
+    cache the final results of the un-underscored methods,
+    and should not be overwritten.
+
+    """
+
+    def __init__(self):
+        self.starting_state_cache = {}
+        self.is_legal_cache = {}
+        self.next_state_cache = {}
+        self.terminal_cache = {}
+        self.reward_cache = {}
+        self.victorious_cache = {}
+
+    # Cached versions
+    async def _starting_state(self, *args, **kwargs) -> StateType:
+        if hash((args, kwargs)) not in self.starting_state_cache:
+            self.starting_state_cache[hash((args, kwargs))] = await self.starting_state(*args, **kwargs)
+        return self.starting_state_cache[hash((args, kwargs))]
+
+    async def _is_legal(self, state: StateType, action: MoveType) -> bool:
+        if hash((state, action)) not in self.is_legal_cache:
+            self.is_legal_cache[hash((state, action))] = await self.is_legal(state, action)
+        return self.is_legal_cache[hash((state, action))]
+
+    async def _next_state(self, state: StateType, action: MoveType) -> StateType:
+        if hash((state, action)) not in self.next_state_cache:
+            self.next_state_cache[hash((state, action))] = await self.next_state(state, action)
+        return self.next_state_cache[hash((state, action))]
+
+    async def _terminal(self, state: StateType) -> bool:
+        if hash(state) not in self.terminal_cache:
+            self.terminal_cache[hash(state)] = await self.terminal(state)
+        return self.terminal_cache[hash(state)]
+
+    async def _reward(self, state: StateType) -> float:
+        if hash(state) not in self.reward_cache:
+            self.reward_cache[hash(state)] = await self.reward(state)
+        return self.reward_cache[hash(state)]
+
+    async def _victorious(self, state: StateType) -> bool:
+        if hash(state) not in self.victorious_cache:
+            self.victorious_cache[hash(state)] = await self.victorious(state)
+        return self.victorious_cache[hash(state)]
+
+    async def clear_cache(self) -> None:
+        """
+        Clears the cache of this game.
+
+        If you overwrite this method, call the parent method
+        at the end of your implementation.
+        """
+        self.starting_state_cache = {}
+        self.is_legal_cache = {}
+        self.next_state_cache = {}
+        self.terminal_cache = {}
+        self.reward_cache = {}
+        self.victorious_cache = {}
+
+    # Un-cached versions, for users to implement.
+
     @abstractmethod
     async def starting_state(self, *args, **kwargs) -> StateType:
         """
@@ -84,7 +149,7 @@ class Game(Generic[MoveType, StateType], ABC, Hashable):
     async def next_state(self, state: StateType, action: MoveType) -> StateType:
         """
         Returns the next state of the game given a current state and action.
-        Requires that the state is non-terminal and action is legal.
+        Requires that the state is non-terminal and the action is legal.
         """
         raise NotImplementedError
 
@@ -92,6 +157,13 @@ class Game(Generic[MoveType, StateType], ABC, Hashable):
     async def terminal(self, state: StateType) -> bool:
         """
         Returns True if the game is over, False otherwise.
+
+        Convention: if a state is non-terminal, then there must exist at least one legal move!
+        There are two ways to handle this:
+        1. Make all moves legal.
+         - Do not raise any errors for illegal moves in next_state
+         - Do legality checking in the terminal() function applied to the *subsequent* state.
+        2. In terminal(), perform a check for whether there exist any legal moves.
         """
         raise NotImplementedError
 
@@ -117,12 +189,5 @@ class Game(Generic[MoveType, StateType], ABC, Hashable):
         """
         Severs any references to the parent of
         this state, making it the root of the tree.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    async def clear_cache(self, state: StateType) -> None:
-        """
-        Clears the cache of this game.
         """
         raise NotImplementedError

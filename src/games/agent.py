@@ -7,7 +7,7 @@ perfect information, abstract strategy game.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Generic, Hashable, Iterator, TypeVar, list
+from typing import Any, Generic, Hashable, Iterator, Optional, TypeVar
 
 import numpy as np
 from game import Game, State
@@ -50,7 +50,7 @@ class Agent(Generic[GameType, StateType, MoveType],
         """
         Returns the active moves for the game state.
 
-        All active moves MUST have distinct hashes!!
+        All active moves must have distinct hashes, and be legal!
         """
         raise NotImplementedError
 
@@ -69,16 +69,27 @@ class Agent(Generic[GameType, StateType, MoveType],
         raise NotImplementedError
 
     @abstractmethod
-    async def require_new_move(self, state: StateType, num_moves: int) -> None:
+    async def require_new_move(self, state: StateType, min_num_moves: int, max_num_moves: Optional[int] = None) -> bool:
         """
-        Demand to increase the number of available moves.
+        Demand to increase the number of available moves. state must be a non-terminal node.
+
+        Part of the contract for Game implementations is that any non-terminal
+        node must have at least one available move. However, it may be that this move is
+        hard to find, etc. To this end, require_new_move is allowed to create
+        any number of moves in the range [min_num_moves, max_num_moves], inclusive.
+
+        If the agent is unable to make any legal move at all, then it should return False.
+        This indicates that the node should actually be marked terminal, and will be handled
+        as a special case in the UCT algorithm.
         """
         raise NotImplementedError
 
     @abstractmethod
     async def max_moves(self, state: StateType) -> int:
         """
-        Returns the maximum number of moves.
+        Returns the maximum number of moves; the MCTS will not
+        attempt to request more moves than this. This should
+        not be 0.
         """
         raise NotImplementedError
 

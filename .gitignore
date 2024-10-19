@@ -6,4 +6,4 @@ __pycache__/
 outputs/*
 data/*
 logs/*
-examples/*
+examples/configs/*

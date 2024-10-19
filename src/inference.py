@@ -9,8 +9,8 @@ from typing import Callable, Tuple, dict, list
 
 import yaml
 
-from src.workers import *
-from src.workers.worker import TaskType, WorkerIdentifer, WorkerType
+from examples.workers import *
+from examples.workers.worker import TaskType, WorkerIdentifer, WorkerType
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, required=True)

@@ -57,12 +57,12 @@ async def crawler(
         # greedily select leaf with given exploration parameter
         leaf = await root.select_leaf()
 
-        if (await leaf.game.terminal(leaf.state)):
+        if (await leaf.terminal()):
             # Immediately backup the value estimate along the path to the root
-            leaf.backup(await leaf.game.reward(leaf.state))
+            leaf.backup(await leaf.game._reward(leaf.state))
             shared_state.iters += 1
 
-            if (await leaf.game.reward(leaf.state)):
+            if (await leaf.game._reward(leaf.state)):
                 shared_state.victorious_death = True
                 shared_state.winning_node = leaf
 

@@ -52,6 +52,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         self.child_total_value: Optional[np.ndarray] = None
         self.child_number_visits: Optional[np.ndarray] = None
 
+        self.impossible = False
+
         # This is a snapshot of the original neural network value of the node.
         self.initial_value = None
 
@@ -89,6 +91,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         self.parent = None
         self.action_idx = -1
 
+        self.game.make_root(self.state)
+
     @property
     def valued(self) -> bool:
         """
@@ -116,6 +120,16 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             return self.root_total_value
         return self.parent.child_total_value[self.action_idx]
 
+    def terminal(self) -> bool:
+        """
+        Returns whether the current node is terminal.
+
+        This is different from the game._terminal function,
+        because a node is also considered terminal if the agent is unable
+        to find a valid move.
+        """
+        return self.game._terminal(self.state) or self.impossible
+
     def child_Q(self) -> np.ndarray:
         """
         The value estimate for each child, based on the average value of all visits.
@@ -142,44 +156,46 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
         # assert not self.unavailable, "Cannot request moves from an unavailable node."
 
-        if self.valued:
-            # if self.move_lock:
-            if self.move_lock.locked():
-                """
-                If we are expanded, then there exists some child. The node is unavailable,
-                meaning somebody else is making a request for moves. We shouldn't make a request
-                ourselves, but there's no need to wait for the request to finish; we can just
-                branch to the available child.
-                """
-                return
-            else:
-                # Temporarily flag the node as unavailable to prevent multiple requests for new moves.
-                # Critical section is only activated conditioned on actually making this request.
-                # TODO: This is custom hardcoded logic that can be replaced with a general allocator.
+        if self.valued and self.move_lock.locked():
+            """
+            If we are expanded, then there exists some child. The node is unavailable,
+            meaning somebody else is making a request for moves. We shouldn't make a request
+            ourselves, but there's no need to wait for the request to finish; we can just
+            branch to the available child.
+            """
+            return
 
-                if len(self.children) < 10:
-                    with self.move_lock:
-                        await self.agent.require_new_move(10)
-                        await self.expand()
+        # TODO: This is custom hardcoded logic that can be replaced with a general allocator.
+        def amount_to_request(current: int, num_visits: int, max_moves: int) -> int:
+            if current < 10:
+                return (1, min(10, max_moves))
+            if current * current < num_visits:
+                return (min(current, max_moves), min(current * 2, max_moves))
 
-                elif self.number_visits > len(self.children) ** 2:
-                    with self.move_lock:
-                        await self.agent.require_new_move(len(self.children) + 1)
-                        await self.expand()
+        min_request, max_request = amount_to_request(
+            len(self.children), self.number_visits, self.agent.max_moves(self.state))
 
-        else:
-            if len(self.children) < 10:
-                with self.move_lock:
-                    await self.agent.require_new_move(10)
+        """
+        Temporarily flag the node as unavailable to prevent multiple requests for new moves.
+        Critical section is only activated conditioned on actually making this request.
+        Two cases: if not self.valued, then we need to wait no matter what.
+        if we're valued but it was unlocked, we will obtain the lock immediately and request moves.
+        """
+        if len(self.children) < min_request:
+            with self.move_lock:
+                success = await self.agent.require_new_move(self.state, min_request, max_request)
+                if success:
                     await self.expand()
-            elif self.number_visits > len(self.children) ** 2:
-                with self.move_lock:
-                    await self.agent.require_new_move(len(self.children) + 1)
-                    await self.expand()
+                else:
+                    # In this edge case, the agent is unable to find any legal moves.
+                    # We should mark this node as terminal.
+                    self.impossible = True
 
     def best_child(self) -> 'UCTNode[GameType, StateType, AgentType]':
         """
         Compute the best legal child, with the action mask.
+
+        WARNING: if no moves are legal, then this will return an illegal move!
         """
         scores = self.child_Q() + self.c * self.child_U()
 
@@ -198,11 +214,11 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         """
         current = self
 
-        assert not await self.game.terminal(
+        assert not await self.terminal(
             self.state), "Cannot select a leaf from a terminal node."
 
         # iterate until either you reach an un-expanded node or a terminal state
-        while (not await self.game.terminal(current.state)):
+        while (not await self.terminal(current.state)):
             # If this takes a long time, it means that the current node is being valued,
             # and we should wait for it to finish. We should not attempt to value it as well.
             await current.value_lock.acquire()
@@ -215,6 +231,12 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 break
 
             await current.request_moves()
+
+            # edge case: if the node is impossible, then we should return it.
+            if current.impossible:
+                # release the lock, and return the current node.
+                current.value_lock.release()
+                break
 
             # Add a virtual loss.
             if virtual_loss:
@@ -238,8 +260,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         """
         assert self.move_lock, "expand() called without critical section protection."
 
-        assert not self.game.terminal(
-            self.state), "Cannot expand a terminal node."
+        assert not self.terminal(self.state), "Cannot expand a terminal node."
 
         assert self.initial_value is not None, "Node has not been backed up, so I don't know the initial NN value."
         assert self.valued, "Node has not been valued."
@@ -306,7 +327,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         self.child_number_visits[action_idx] = 0
 
         action = await self.agent.get_active_move(action_idx)
-        next_state = await self.game.next_state(self.state, action)
+        next_state = await self.game._next_state(self.state, action)
         self.children[action_idx] = UCTNode(
             agent=self.agent,
             game=self.game,

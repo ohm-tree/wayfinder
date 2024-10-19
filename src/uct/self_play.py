@@ -74,7 +74,7 @@ async def self_play(
 
     move_count = 0
 
-    while not (await game.terminal(root.state)):
+    while not (await game._terminal(root.state)):
         logger.info("Move: " + str(move_count))
         move_count += 1
         logger.info(root.state.__str__())
@@ -112,7 +112,7 @@ async def self_play(
 
     # The reward for all states in the tree is the reward of the final state.
 
-    final_reward = await game.reward(root.state)
+    final_reward = await game._reward(root.state)
     if winning_node is not None:
         logger.info(
             "Game finished early with reward: " + str(final_reward))

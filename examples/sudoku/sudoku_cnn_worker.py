@@ -4,7 +4,6 @@ import multiprocessing
 import os
 import queue
 import time
-from typing import Dict, List
 
 import torch
 
@@ -17,8 +16,8 @@ class SudokuCNNWorker(Worker):
                  config: dict,
                  run_name: str,
                  task_id: int,
-                 gpu_set: List[int],
-                 queues: Dict[str, multiprocessing.Queue],
+                 gpu_set: list[int],
+                 queues: dict[str, multiprocessing.Queue],
                  **kwargs  # Unused
                  ):
         super().__init__(
@@ -37,7 +36,7 @@ class SudokuCNNWorker(Worker):
         return True
 
     def loop(self):
-        my_tasks: List[dict] = self.spin_deque_tasks(
+        my_tasks: list[dict] = self.spin_deque_tasks(
             channel='SudokuCNN',
             blocking=True,
             timeout=self.config['timeout'],

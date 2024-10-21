@@ -7,10 +7,10 @@ import random
 import traceback
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from typing import Dict, List, Optional, Union, dict
+from typing import Optional, Union
 
 """
-All Tasks should be Dict-like objects.
+All Tasks should be dict-like objects.
 
 
 """
@@ -25,7 +25,7 @@ class Worker(ABC):
                  name: str,
                  worker_type: str,
                  worker_idx: int,
-                 queues: Dict[str, multiprocessing.Queue],
+                 queues: dict[str, multiprocessing.Queue],
                  run_name: str
                  ):
         self.name = name
@@ -36,8 +36,8 @@ class Worker(ABC):
         self.queues = queues
         self.setup_logger()
 
-        self.dequeue_events: Dict[str, asyncio.Event] = {}
-        self.dequeue_results: Dict[str, dict] = {}
+        self.dequeue_events: dict[str, asyncio.Event] = {}
+        self.dequeue_results: dict[str, dict] = {}
 
         self._task_idx = 0
 
@@ -125,7 +125,7 @@ class Worker(ABC):
                          timeout: Optional[int] = None,
                          batch_size: Optional[int] = None,
                          validate=True,
-                         ) -> List[dict]:
+                         ) -> list[dict]:
         """
         If batch_size is None, return all tasks available.
         If batch_size is not None, return a batch of tasks
@@ -188,7 +188,7 @@ class Worker(ABC):
                                       timeout: Optional[int] = None,
                                       batch_size: Optional[int] = None,
                                       validate=True,
-                                      ) -> List[dict]:
+                                      ) -> list[dict]:
         """
         If batch_size is None, return all tasks available.
         If batch_size is not None, return a batch of tasks

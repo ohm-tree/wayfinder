@@ -9,7 +9,7 @@ import multiprocessing
 import os
 import queue
 import time
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class MCTSWorker(Worker):
                  config: dict,
                  run_name: str,
                  task_id: int,
-                 queues: Dict[str, multiprocessing.Queue],
+                 queues: dict[str, multiprocessing.Queue],
                  **kwargs  # Unused
                  ):
         super().__init__(
@@ -75,7 +75,7 @@ class MCTSWorker(Worker):
                 board=problem
             )
 
-            states: List[SudokuState]
+            states: list[SudokuState]
 
             states, distributions, rewards = await async_self_play(
                 self,

@@ -10,10 +10,10 @@ from typing import (
     Generic,
     Hashable,
     Iterator,
-    List,
     Optional,
     Tuple,
     TypeVar,
+    list,
 )
 
 import numpy as np

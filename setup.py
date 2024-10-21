@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name='wayfinder',
     packages=find_packages(
-        include=['wayfinder', 'wayfinder.*']
+        include=['wayfinder*']
     ),
     author='rowechen',
     author_email='rowechen@mit.edu',

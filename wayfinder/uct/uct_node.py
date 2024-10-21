@@ -7,7 +7,6 @@ Nodes can be in a couple of states.
 """
 
 import asyncio
-import random
 from typing import Any, Generic, Hashable, Iterator, Optional, TypeVar
 
 import numpy as np

@@ -122,7 +122,7 @@ def self_play(
     Play a game using a policy, and return the game states, action distributions, and final reward.
     """
     return asyncio.run(
-        async_uct_search(
+        async_self_play(
             logger,
             state,
             game,

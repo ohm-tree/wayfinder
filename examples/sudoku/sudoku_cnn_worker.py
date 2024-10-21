@@ -37,8 +37,8 @@ class SudokuCNNWorker(Worker):
         return True
 
     def loop(self):
-        my_tasks: List[dict] = self.spin_deque_task(
-            channel=self.name,
+        my_tasks: List[dict] = self.spin_deque_tasks(
+            channel='SudokuCNNWorker',
             blocking=True,
             timeout=self.config['timeout'],
             batch_size=self.config['batch_size'],
@@ -50,33 +50,19 @@ class SudokuCNNWorker(Worker):
         if len(my_tasks) == 0:
             # Spinlock, disappointing, but there's nothing to do.
             return
+
         # We have tasks to complete.
-        input_data = [
-            policy_value_suggest_comments(
-                i.task,
-                i.response,
-                num=self.num
-            )
-            for i in my_tasks
-        ]
-        outputs: List[RequestOutput] = self.generate(
-            input_data
-        )
-
-        for i in range(len(outputs)):
-            output = outputs[i].outputs[0].text
-            # self.logger.info(output)
-            res = parse_policy_value_output(
-                output, self.logger, num=self.num)
-
-            self.enqueue_response(
-                response=res,
-                task=WorkerTask(
-                    head_id=my_tasks[i].head_id,
-                    task_id=TaskIdentifier(
-                        task_idx=my_tasks[i].task_id.task_idx,
-                        task_type=PolicyValueTaskType
-                    ),
-                    task=my_tasks[i].task
-                )
+        input_data = torch.concat([
+            torch.Tensor(i['data']) for i in my_tasks
+        ], dim=0).to(torch.device("cuda"))
+        policy: torch.Tensor
+        value: torch.Tensor
+        policy, value = self.model(input_data)
+        np_policy = policy.cpu().detach().numpy()
+        np_value = value.cpu().detach().numpy()
+        for i, p, v in zip(my_tasks, np_policy, np_value):
+            i["policy"] = p
+            i["value"] = v
+            self.enqueue(
+                response=i
             )

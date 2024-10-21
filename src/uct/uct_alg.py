@@ -70,13 +70,14 @@ async def crawler(
             assert leaf.value_lock.locked()
 
             # Request the value of the leaf from the agent
-            leaf.backup(await leaf.agent.value(leaf.state))
+            leaf.backup(await leaf.agent._value(leaf.state))
             shared_state.iters += 1
         if time.time() - last_log_time > min_log_delta:
             last_log_time = time.time()
 
 
-class UCTSearchResult(TypedDict):
+class UCTSearchResult(TypedDict, Generic[GameType, StateType, AgentType]):
+    active_moves: list[MoveType]
     visit_distribution: np.ndarray
     best_Q: float
     winning_node: Optional[UCTNode[GameType, StateType, AgentType]]
@@ -87,7 +88,7 @@ async def async_uct_search(
     root: UCTNode[GameType, StateType, AgentType],
     num_iters: int,
     train: bool = True,
-) -> UCTSearchResult:
+) -> UCTSearchResult[GameType, StateType, AgentType]:
     """
     Perform num_iters iterations of the UCT algorithm from the given game state
     using the exploration parameter c. Return the distribution of visits to each direct child.
@@ -111,6 +112,7 @@ async def async_uct_search(
     await asyncio.gather(*crawlers)
 
     return {
+        "active_moves": root.agent.active_moves(root.state),
         "visit_distribution": root.child_number_visits / np.sum(root.child_number_visits),
         "best_Q": root.child_Q()[root.child_number_visits.argmax()],
         "winning_node": shared_state.winning_node
@@ -122,7 +124,7 @@ def uct_search(
     root: UCTNode[GameType, StateType, AgentType],
     num_iters: int,
     train: bool = True,
-) -> UCTSearchResult:
+) -> UCTSearchResult[GameType, StateType, AgentType]:
     """
     Perform num_iters iterations of the UCT algorithm from the given game state
     using the exploration parameter c. Return the distribution of visits to each direct child.

@@ -7,13 +7,13 @@ import numpy as np
 from src.games.game import Game, State
 
 
-class SudokuGameState(State):
+class SudokuState(State):
     def __init__(self, board: np.ndarray, dead: bool = False):
         self.board = board
         self.dead = False
 
     @classmethod
-    def saves(cls, states: list['SudokuGameState'], filename: str) -> None:
+    def saves(cls, states: list['SudokuState'], filename: str) -> None:
         """
         Save a collection of states to a file.
         """
@@ -21,22 +21,22 @@ class SudokuGameState(State):
         np.save(filename, res)
 
     @classmethod
-    def loads(cls, filename: str) -> list['SudokuGameState']:
+    def loads(cls, filename: str) -> list['SudokuState']:
         """
         Load a collection of states from a file.
         """
         res = np.load(filename)
-        return [SudokuGameState(board=board) for board
+        return [SudokuState(board=board) for board
                 in res]
 
     @classmethod
-    def from_string(cls, s: str) -> 'SudokuGameState':
+    def from_string(cls, s: str) -> 'SudokuState':
         """
         Create a SudokuGameState from a string representation of the board,
         which is a 81-length string of '0' through '9,' where '0' represents an empty cell.
         """
         board = np.array([int(c) for c in s]).reshape((9, 9))
-        return SudokuGameState(board)
+        return SudokuState(board)
 
     def to_numpy(self) -> np.ndarray:
         """
@@ -71,7 +71,7 @@ class SudokuMove:
         return f"({self.row}, {self.col}, {self.number})"
 
 
-class SudokuGame(Game[SudokuMove, SudokuGameState]):
+class SudokuGame(Game[SudokuMove, SudokuState]):
     """
     A Sudoku game implementation of the Game class.
 
@@ -86,17 +86,17 @@ class SudokuGame(Game[SudokuMove, SudokuGameState]):
         self.timeout_jitter = timeout_jitter
         self.legality_on_move = legality_on_move
 
-    async def starting_state(self, board: Optional[np.ndarray] = None) -> SudokuGameState:
+    async def starting_state(self, board: Optional[np.ndarray] = None) -> SudokuState:
         """
         Returns a new Sudoku game state.
         """
 
         await asyncio.sleep(random.random() * self.timeout_jitter)
         if board is None:
-            return SudokuGameState(board=np.zeros((9, 9), dtype=int))
-        return SudokuGameState(board=board)
+            return SudokuState(board=np.zeros((9, 9), dtype=int))
+        return SudokuState(board=board)
 
-    async def is_legal(self, state: SudokuGameState, action: SudokuMove) -> bool:
+    async def is_legal(self, state: SudokuState, action: SudokuMove) -> bool:
         """
         If legality_on_move is False, this method always returns True.
         Otherwise, it checks if the move is legal on the board.
@@ -105,7 +105,7 @@ class SudokuGame(Game[SudokuMove, SudokuGameState]):
             return await self.is_actually_legal(state, action)
         return True
 
-    async def is_actually_legal(self, state: SudokuGameState, action: SudokuMove) -> bool:
+    async def is_actually_legal(self, state: SudokuState, action: SudokuMove) -> bool:
         """
         Determines if placing a number in the given row and column is legal, assuming the move just made.
         """
@@ -123,7 +123,7 @@ class SudokuGame(Game[SudokuMove, SudokuGameState]):
             return False
         return True
 
-    async def next_state(self, state: SudokuGameState, action: SudokuMove) -> SudokuGameState:
+    async def next_state(self, state: SudokuState, action: SudokuMove) -> SudokuState:
         """
         Places a number on the Sudoku board.
         Action is a tuple: (row, col, number)
@@ -139,11 +139,11 @@ class SudokuGame(Game[SudokuMove, SudokuGameState]):
 
         # Check if the move is legal only for the new move
         if (not self.legality_on_move) and (not self.is_actually_legal(state, row, col, number)):
-            return SudokuGameState(board=new_board, is_dead=True)
+            return SudokuState(board=new_board, is_dead=True)
 
-        return SudokuGameState(board=new_board)
+        return SudokuState(board=new_board)
 
-    async def terminal(self, state: SudokuGameState) -> bool:
+    async def terminal(self, state: SudokuState) -> bool:
         """
         The game is considered over if the board is fully filled or if the state is dead.
         """
@@ -152,7 +152,7 @@ class SudokuGame(Game[SudokuMove, SudokuGameState]):
             return True
         return np.all(state.board != 0)
 
-    async def reward(self, state: SudokuGameState) -> float:
+    async def reward(self, state: SudokuState) -> float:
         """
         Rewards the player if the board is correctly completed, otherwise 0.
         """
@@ -166,14 +166,14 @@ class SudokuGame(Game[SudokuMove, SudokuGameState]):
             state.board), "Board is not valid, but reached terminal non-dead state."
         return 1.0
 
-    async def victorious(self, state: SudokuGameState) -> bool:
+    async def victorious(self, state: SudokuState) -> bool:
         """
         Returns True if the board is correctly completed.
         """
         await asyncio.sleep(random.random() * self.timeout_jitter)
         return self.reward(state) == 1.0
 
-    async def make_root(self, state: SudokuGameState) -> None:
+    async def make_root(self, state: SudokuState) -> None:
         """
         No need to do anything here.
         """

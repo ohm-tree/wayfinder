@@ -47,7 +47,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
         # The priors and values are obtained from a neural network every time you expand a node
         # The priors, total values, and number visits will be 0 on all illegal actions
-        self.action_mask: Optional[np.ndarray] = None
+        # self.action_mask: Optional[np.ndarray] = None
         self.child_priors: Optional[np.ndarray] = None
         self.child_total_value: Optional[np.ndarray] = None
         self.child_number_visits: Optional[np.ndarray] = None
@@ -193,13 +193,11 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
     def best_child(self) -> 'UCTNode[GameType, StateType, AgentType]':
         """
-        Compute the best legal child, with the action mask.
-
-        WARNING: if no moves are legal, then this will return an illegal move!
+        Compute the best child.
         """
         scores = self.child_Q() + self.c * self.child_U()
 
-        scores[~self.action_mask] = -np.inf
+        # scores[~self.action_mask] = -np.inf
 
         return self.children[np.argmax(scores)]
 
@@ -265,13 +263,6 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         assert self.initial_value is not None, "Node has not been backed up, so I don't know the initial NN value."
         assert self.valued, "Node has not been valued."
 
-        child_priors = await self.agent.policy()
-
-        # if self.noise and self.action == -1:
-        #     # if you are the root, mix dirichlet noise into the prior
-        #     child_priors = 0.75 * child_priors + 0.25 * \
-        #         dirichlet_noise(self.action_mask, 0.3)
-
         # Recommended by minigo which cites Leela.
         # See https://github.com/tensorflow/minigo/blob/master/cc/mcts_tree.cc line 448.
         # See https://www.reddit.com/r/cbaduk/comments/8j5x3w/first_play_urgency_fpu_parameter_in_alpha_zero/
@@ -302,8 +293,11 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             self.child_number_visits = np.zeros(new_length)
 
         for action_idx in range(old_length, new_length):
-            if self.action_mask[action_idx]:
-                await self.add_child(action_idx, child_priors[action_idx], value)
+            move = self.agent.get_active_move(self.state, action_idx)
+            # if self.action_mask[action_idx]:
+            await self.add_child(action_idx,
+                                 self.agent._policy(self.state, move),
+                                 value)
 
     async def add_child(self, action_idx, prior, value) -> None:
         """
@@ -367,7 +361,7 @@ async def dirichlet_noise(action_mask, alpha) -> np.ndarray:
 
     Parameters:
     ----------
-    action_mask: np.ndarray
+    # action_mask: np.ndarray
         A boolean array of legal actions.
 
     alpha: float

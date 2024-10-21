@@ -96,11 +96,19 @@ class Worker(ABC):
 
     def enqueue(self,
                 obj: dict,
-                channel: str,
+                channel: Optional[str] = None,
                 ) -> None:
         """
         General-purpose enqueue function.
+
+        If channel is None, it is inferred from the task
+        by checking the "channel" field.
         """
+        if channel is None:
+            if "channel" not in obj:
+                raise ValueError(
+                    "No channel specified for enqueue.")
+            channel = obj["channel"]
         self.queues[channel].put(obj)
 
     def enqueue_with_handler(self, obj: dict, channel: str) -> None:

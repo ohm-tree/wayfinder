@@ -16,7 +16,7 @@ have to recompute them every time. So the decision is where to put them; should 
 the State, and increase the size of the State, or put them in the Game.
 
 In this project, we will take the perspective that for any classes that the user has to implement,
-*dataclasses should be light* and *agents should be heavy*.
+*data classes should be light* and *agents should be heavy*.
 In this case, the Game is the more agent-like object, and should maintain caches which
 are e.g. dict[State, dict[Move, State]] and dict[State, float] for state transitions and rewards.
 

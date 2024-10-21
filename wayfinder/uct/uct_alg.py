@@ -7,20 +7,8 @@ The code is adapted from https://www.moderndescartes.com/essays/deep_dive_mcts/.
 
 import asyncio
 import logging
-import multiprocessing
-import random
 import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Hashable,
-    Iterator,
-    Optional,
-    Tuple,
-    TypedDict,
-    TypeVar,
-)
+from typing import Any, Generic, Hashable, Iterator, Optional, Tuple, TypedDict, TypeVar
 
 import numpy as np
 

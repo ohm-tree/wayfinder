@@ -5,4 +5,9 @@ setup(
     packages=find_packages(
         include=['wayfinder', 'wayfinder.*']
     ),
+    author='rowechen',
+    author_email='rowechen@mit.edu',
+    install_requires=[
+        'numpy',
+    ]
 )

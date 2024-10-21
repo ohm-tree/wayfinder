@@ -10,10 +10,7 @@ See game.md for more information.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Any, Generic, Hashable, Iterator, TypeVar, list
-
-import numpy as np
 
 
 class State(ABC, Hashable):

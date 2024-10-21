@@ -15,7 +15,7 @@ import numpy as np
 
 from examples.sudoku.sudoku import SudokuGame, SudokuMove, SudokuState
 from examples.workers import *
-from src.uct.self_play import async_self_play
+from wayfinder.uct.self_play import async_self_play
 
 
 class MCTSWorker(Worker):

@@ -2,5 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='wayfinder',
-    packages=find_packages()
+    packages=find_packages(
+        include=['wayfinder', 'wayfinder.*']
+    ),
 )

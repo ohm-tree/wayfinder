@@ -21,7 +21,7 @@ import numpy as np
 
 from examples.sudoku.sudoku import SudokuGame, SudokuMove, SudokuState
 from examples.workers.worker import Worker
-from src.games.agent import Agent
+from wayfinder.games.agent import Agent
 
 
 class SudokuAgent(Agent[SudokuGame, SudokuState, SudokuMove]):

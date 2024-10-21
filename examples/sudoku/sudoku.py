@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from src.games.game import Game, State
+from wayfinder.games.game import Game, State
 
 
 class SudokuState(State):

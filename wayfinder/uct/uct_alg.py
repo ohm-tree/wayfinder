@@ -24,8 +24,8 @@ from typing import (
 
 import numpy as np
 
-from src.games import *
-from src.uct.uct_node import UCTNode
+from wayfinder.games import *
+from wayfinder.uct.uct_node import UCTNode
 
 MoveType = TypeVar('MoveType', bound=Hashable)
 StateType = TypeVar('State', bound=State)

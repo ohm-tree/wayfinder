@@ -12,7 +12,7 @@ from typing import Any, Generic, Hashable, Iterator, Optional, TypeVar
 
 import numpy as np
 
-from src.games import *
+from wayfinder.games import *
 
 MoveType = TypeVar('MoveType', bound=Hashable)
 StateType = TypeVar('State', bound=State)

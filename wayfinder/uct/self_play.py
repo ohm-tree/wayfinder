@@ -27,10 +27,10 @@ from typing import (
 import numpy as np
 from tqdm import tqdm
 
-from src.games import *
-from src.games.game import Game, State
-from src.uct.uct_alg import async_uct_search
-from src.uct.uct_node import UCTNode
+from wayfinder.games import *
+from wayfinder.games.game import Game, State
+from wayfinder.uct.uct_alg import async_uct_search
+from wayfinder.uct.uct_node import UCTNode
 
 MoveType = TypeVar('MoveType', bound=Hashable)
 StateType = TypeVar('State', bound=State)

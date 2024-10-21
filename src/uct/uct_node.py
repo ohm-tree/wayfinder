@@ -29,7 +29,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                  parent: 'UCTNode[GameType, StateType, AgentType]' = None,
                  init_type: str = "zero",
                  c: float = 1.0,
-                 noise: bool = True
+                 noise: bool = True,
+                 death_value=-1.0
                  ):
         """
         Initialize a new UCTNode.
@@ -128,7 +129,20 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         because a node is also considered terminal if the agent is unable
         to find a valid move.
         """
-        return self.game._terminal(self.state) or self.impossible
+        return self.impossible or self.game._terminal(self.state)
+
+    def reward(self) -> bool:
+        """
+        Returns whether the current node is terminal.
+
+        This is different from the game._terminal function,
+        because a node is also considered terminal if the agent is unable
+        to find a valid move.
+        """
+        if self.impossible:
+            return self.game.death_value
+        else:
+            return self.game._reward(self.state)
 
     def child_Q(self) -> np.ndarray:
         """
@@ -239,7 +253,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             # Add a virtual loss.
             if virtual_loss:
                 current.number_visits += 1
-                current.total_value -= 1
+                current.total_value += self.game.death_value
 
             current = current.best_child()
 
@@ -330,7 +344,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             parent=self,
             init_type=self.init_type,
             c=self.c,
-            noise=self.noise
+            noise=self.noise,
         )
 
     def backup(self, estimate) -> None:
@@ -351,7 +365,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         while current.parent is not None:
             # Do not increment the number of visits here, because it is already done in select_leaf.
             # Extra +1 to the estimate to offset the virtual loss.
-            current.total_value += estimate + 1
+            current.total_value += estimate - self.game.death_value
             current = current.parent
 
 

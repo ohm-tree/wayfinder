@@ -84,6 +84,11 @@ class Game(Generic[MoveType, StateType], ABC, Hashable):
         self.reward_cache = {}
         self.victorious_cache = {}
 
+    @property
+    @abstractmethod
+    def death_value(self):
+        raise NotImplementedError
+
     # Cached versions
     async def _starting_state(self, *args, **kwargs) -> StateType:
         if hash((args, kwargs)) not in self.starting_state_cache:

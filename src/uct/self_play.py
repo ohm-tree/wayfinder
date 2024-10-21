@@ -44,7 +44,7 @@ class SelfPlayResult(TypedDict):
     rewards: list[float]
 
 
-async def self_play(
+async def async_self_play(
     logger: logging.Logger,
     state: StateType,
     game: GameType,
@@ -125,3 +125,24 @@ async def self_play(
         "distributions": distributions,
         "rewards": rewards
     }
+
+
+def self_play(
+    logger: logging.Logger,
+    state: StateType,
+    game: GameType,
+    tree_kwargs: Optional[dict[str, Any]] = None,
+    search_kwargs: Optional[dict[str, Any]] = None,
+) -> SelfPlayResult:
+    """
+    Play a game using a policy, and return the game states, action distributions, and final reward.
+    """
+    return asyncio.run(
+        async_uct_search(
+            logger,
+            state,
+            game,
+            tree_kwargs,
+            search_kwargs
+        )
+    )

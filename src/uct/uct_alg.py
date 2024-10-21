@@ -54,13 +54,14 @@ async def crawler(
 
     # while not victorious_death and iters < num_iters:
     while shared_state.victorious_death is False and shared_state.iters < num_iters:
+        shared_state.iters += 1
+
         # greedily select leaf with given exploration parameter
         leaf = await root.select_leaf()
 
         if (await leaf.terminal()):
             # Immediately backup the value estimate along the path to the root
-            leaf.backup(await leaf.game._reward(leaf.state))
-            shared_state.iters += 1
+            leaf.backup(await leaf.reward())
 
             if (await leaf.game._reward(leaf.state)):
                 shared_state.victorious_death = True
@@ -71,7 +72,10 @@ async def crawler(
 
             # Request the value of the leaf from the agent
             leaf.backup(await leaf.agent._value(leaf.state))
-            shared_state.iters += 1
+        else:
+            raise ValueError(
+                "Leaf should either be terminal or unvalued."
+            )
         if time.time() - last_log_time > min_log_delta:
             last_log_time = time.time()
 
@@ -131,4 +135,11 @@ def uct_search(
 
     Requires that game_state is a non-terminal state.
     """
-    return asyncio.run(async_uct_search(logger, root, num_iters, train))
+    return asyncio.run(
+        async_uct_search(
+            logger,
+            root,
+            num_iters,
+            train
+        )
+    )

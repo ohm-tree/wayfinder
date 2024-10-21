@@ -22,8 +22,8 @@ class SudokuCNNWorker(Worker):
                  **kwargs  # Unused
                  ):
         super().__init__(
-            name="SudokuCNNWorker" + "_" + str(task_id),
-            worker_type="SudokuCNNWorker",
+            name="SudokuCNN" + "_" + str(task_id),
+            worker_type="SudokuCNN",
             worker_idx=task_id,
             queues=queues,
             run_name=run_name,
@@ -38,7 +38,7 @@ class SudokuCNNWorker(Worker):
 
     def loop(self):
         my_tasks: List[dict] = self.spin_deque_tasks(
-            channel='SudokuCNNWorker',
+            channel='SudokuCNN',
             blocking=True,
             timeout=self.config['timeout'],
             batch_size=self.config['batch_size'],

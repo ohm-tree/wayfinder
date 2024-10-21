@@ -7,3 +7,4 @@ outputs/*
 data/*
 logs/*
 examples/configs/*
+build/*

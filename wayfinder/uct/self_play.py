@@ -8,12 +8,11 @@ This returns the game states and action distributions, as well as the final resu
 
 import asyncio
 import logging
-from typing import Any, Generic, Hashable, Iterator, Optional, Tuple, TypedDict, TypeVar
+from typing import Any, Generic, Hashable, Iterator, Optional, TypedDict, TypeVar
 
 import numpy as np
 
 from wayfinder.games import *
-from wayfinder.games.game import Game, State
 from wayfinder.uct.uct_alg import async_uct_search
 from wayfinder.uct.uct_node import UCTNode
 

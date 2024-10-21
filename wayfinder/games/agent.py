@@ -9,7 +9,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic, Hashable, Iterator, Optional, TypeVar
 
 import numpy as np
-from game import Game, State
+
+from wayfinder.games.game import Game, State
 
 MoveType = TypeVar('MoveType', bound=Hashable)
 

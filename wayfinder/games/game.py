@@ -10,7 +10,7 @@ See game.md for more information.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Hashable, Iterator, TypeVar, list
+from typing import Any, Generic, Hashable, Iterator, TypeVar
 
 
 class State(ABC, Hashable):

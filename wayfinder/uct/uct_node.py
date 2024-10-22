@@ -100,6 +100,13 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         return self.initial_value is not None
 
     @property
+    def expanded(self) -> bool:
+        """
+        Returns whether the node has been expanded.
+        """
+        return len(self.children) > 0
+
+    @property
     def number_visits(self) -> int:
         if self.parent is None:
             return self.root_number_visits
@@ -117,7 +124,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         if self.parent is None:
             return self.root_total_value
         return self.parent.child_total_value[self.action_idx]
-    
+
     @total_value.setter
     def total_value(self, value) -> None:
         if self.parent is None:
@@ -172,15 +179,17 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         current node has been visited N times.
         """
 
+        # print("Inside request moves")
         # assert not self.unavailable, "Cannot request moves from an unavailable node."
 
-        if self.valued and self.move_lock.locked():
+        if self.expanded and self.move_lock.locked():
             """
             If we are expanded, then there exists some child. The node is unavailable,
             meaning somebody else is making a request for moves. We shouldn't make a request
             ourselves, but there's no need to wait for the request to finish; we can just
             branch to the available child.
             """
+            # print("Already valued and locked")
             return
 
         # TODO: This is custom hardcoded logic that can be replaced with a general allocator.
@@ -191,20 +200,25 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 return (min(current, max_moves), min(current * 2, max_moves))
 
         min_request, max_request = amount_to_request(
-            len(self.children), self.number_visits, self.agent.max_moves(self.state))
+            len(self.children), self.number_visits, await self.agent.max_moves(self.state))
 
+        # print(f"Requesting moves from {min_request} to {max_request}")
         """
         Temporarily flag the node as unavailable to prevent multiple requests for new moves.
         Critical section is only activated conditioned on actually making this request.
-        Two cases: if not self.valued, then we need to wait no matter what.
-        if we're valued but it was unlocked, we will obtain the lock immediately and request moves.
+        Two cases: if not self.expanded, then we need to wait no matter what.
+        if we're expanded but it was unlocked, we will obtain the lock immediately and request moves.
         """
         if len(self.children) < min_request:
-            with self.move_lock:
+            # print("Requesting moves")
+            async with self.move_lock:
+                # print("Inside critical section")
                 success = await self.agent.require_new_move(self.state, min_request, max_request)
                 if success:
+                    # print("Success")
                     await self.expand()
                 else:
+                    # print("Failure")
                     # In this edge case, the agent is unable to find any legal moves.
                     # We should mark this node as terminal.
                     self.impossible = True
@@ -258,6 +272,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 current.number_visits += 1
                 current.total_value += self.game.death_value
 
+            assert len(current.children) > 0, "Node has no children."
             current = current.best_child()
 
         # Add a virtual loss.
@@ -273,9 +288,11 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
         Queries self.agent for the policy estimate of all of the children.
         """
+        print("Inside expand")
+
         assert self.move_lock, "expand() called without critical section protection."
 
-        assert not self.terminal(), "Cannot expand a terminal node."
+        assert not await self.terminal(), "Cannot expand a terminal node."
 
         assert self.initial_value is not None, "Node has not been backed up, so I don't know the initial NN value."
         assert self.valued, "Node has not been valued."
@@ -293,7 +310,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             value = self.initial_value - 0.1
 
         old_length = len(self.children)
-        new_length = await self.agent.len_active_moves()
+        new_length = await self.agent.len_active_moves(self.state)
         assert new_length >= old_length, "New length is less than old length."
         assert new_length > 0, "New length is 0."
         # copy all old data
@@ -310,10 +327,10 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             self.child_number_visits = np.zeros(new_length)
 
         for action_idx in range(old_length, new_length):
-            move = self.agent.get_active_move(self.state, action_idx)
+            move = await self.agent.get_active_move(self.state, action_idx)
             # if self.action_mask[action_idx]:
             await self.add_child(action_idx,
-                                 self.agent._policy(self.state, move),
+                                 await self.agent._policy(self.state, move),
                                  value)
 
     async def add_child(self, action_idx, prior, value) -> None:

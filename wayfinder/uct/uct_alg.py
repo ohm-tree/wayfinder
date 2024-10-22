@@ -90,6 +90,7 @@ async def async_uct_search(
     shared_state = crawler_shared_state()
 
     # start up 10 crawlers
+    # TODO: make the number of crawlers a search parameter
     crawlers = []
     for _ in range(10):
         crawlers.append(crawler(

@@ -223,11 +223,10 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         """
         current = self
 
-        assert not await self.terminal(
-            self.state), "Cannot select a leaf from a terminal node."
+        assert not await self.terminal(), "Cannot select a leaf from a terminal node."
 
         # iterate until either you reach an un-expanded node or a terminal state
-        while (not await self.terminal(current.state)):
+        while (not await current.terminal()):
             # If this takes a long time, it means that the current node is being valued,
             # and we should wait for it to finish. We should not attempt to value it as well.
             await current.value_lock.acquire()
@@ -269,7 +268,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         """
         assert self.move_lock, "expand() called without critical section protection."
 
-        assert not self.terminal(self.state), "Cannot expand a terminal node."
+        assert not self.terminal(), "Cannot expand a terminal node."
 
         assert self.initial_value is not None, "Node has not been backed up, so I don't know the initial NN value."
         assert self.valued, "Node has not been valued."

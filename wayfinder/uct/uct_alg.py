@@ -32,7 +32,7 @@ async def crawler(
     logger: logging.Logger,
     root: UCTNode[GameType, StateType, AgentType],
     shared_state: crawler_shared_state,
-    num_iters: int,
+    num_iters: int = 100,
     min_log_delta: float = 10.0,  # 10 seconds between logging to not spam the logs
 ) -> None:
     """
@@ -78,8 +78,7 @@ class UCTSearchResult(Generic[GameType, StateType, AgentType]):
 async def async_uct_search(
     logger: logging.Logger,
     root: UCTNode[GameType, StateType, AgentType],
-    num_iters: int,
-    train: bool = True,
+    num_iters: int = 100,
 ) -> UCTSearchResult[GameType, StateType, AgentType]:
     """
     Perform num_iters iterations of the UCT algorithm from the given game state
@@ -98,7 +97,6 @@ async def async_uct_search(
             root=root,
             shared_state=shared_state,
             num_iters=num_iters,
-            train=train,
         ))
 
     await asyncio.gather(*crawlers)

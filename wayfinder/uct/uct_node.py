@@ -117,6 +117,13 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         if self.parent is None:
             return self.root_total_value
         return self.parent.child_total_value[self.action_idx]
+    
+    @total_value.setter
+    def total_value(self, value) -> None:
+        if self.parent is None:
+            self.root_total_value = value
+        else:
+            self.parent.child_total_value[self.action_idx] = value
 
     def terminal(self) -> bool:
         """
@@ -256,7 +263,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         # Add a virtual loss.
         if virtual_loss:
             current.number_visits += 1
-            current.total_value -= 1
+            current.total_value += self.game.death_value
 
         return current
 

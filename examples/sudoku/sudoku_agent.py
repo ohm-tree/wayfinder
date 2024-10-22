@@ -11,13 +11,10 @@ from typing import (
     Hashable,
     Iterator,
     Optional,
-    Tuple,
     TypeVar,
-    list,
 )
 
 import numpy as np
-
 from examples.sudoku.sudoku import SudokuGame, SudokuMove, SudokuState
 from examples.workers.worker import Worker
 from wayfinder.games.agent import Agent
@@ -46,9 +43,10 @@ class SudokuAgent(Agent[SudokuGame, SudokuState, SudokuMove]):
             return
         result = await self.worker.query(
             task={
+                'state': state.to_numpy(),
                 'channel': self.worker.name,
             },
-            channel='SudokuCNNWorker'
+            channel='SudokuCNN'
         )
         self.full_result_cache.update(
             {

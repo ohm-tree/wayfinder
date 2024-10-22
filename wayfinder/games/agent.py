@@ -25,7 +25,7 @@ class Agent(Generic[GameType, StateType, MoveType],
         self.game = game
         self.policy_cache = {}
         self.value_cache = {}
-        self.index_active_move_cache = {}
+        self.active_move_cache: dict[StateType, list[MoveType]] = {}
 
     async def _policy(self, state: StateType, move: MoveType) -> np.ndarray:
         """
@@ -57,49 +57,58 @@ class Agent(Generic[GameType, StateType, MoveType],
         """
         raise NotImplementedError
 
-    @abstractmethod
-    async def get_active_move(self, state: StateType, index: int) -> MoveType:
-        """
-        Returns the active move at the given index.
-        Not cached; user should provide own caching implementation.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     async def active_moves(self, state: StateType) -> list[MoveType]:
         """
         Returns the active moves for the game state.
 
         All active moves must have distinct hashes, and be legal!
 
-        Not cached; user should provide own caching implementation.
-        """
-        raise NotImplementedError
+        By default, queries self.active_move_cache.
 
-    async def _index_active_move(self, state: StateType, move: MoveType) -> int:
+        Users may override this method to provide their own caching implementation
+        or more efficient querying.
         """
-        Returns the index of the active move in the game state.
-        Cached; should not change under required_new_move.
-        """
-        if hash((state, move)) not in self.index_active_move_cache:
-            self.index_active_move_cache[hash((state, move))] = await self.index_active_move(state, move)
-        return self.index_active_move_cache[hash((state, move))]
+        return self.active_move_cache.get(state, [])
 
-    @abstractmethod
+    async def get_active_move(self, state: StateType, index: int) -> MoveType:
+        """
+        Returns the active move at the given index.
+
+        By default, queries self.active_move_cache.
+
+        Users may override this method to provide their own caching implementation
+        or more efficient querying.
+        """
+        if state not in self.active_move_cache:
+            raise IndexError(f"Index {index} out of bounds for active moves.")
+        if index >= len(self.active_move_cache[state]):
+            raise IndexError(f"Index {index} out of bounds for active moves.")
+        return self.active_move_cache[state][index]
+
     async def index_active_move(self, state: StateType, move: MoveType) -> int:
         """
         Returns the index of the active move in the game state.
-        Not cached; user should provide own caching implementation.
-        """
-        raise NotImplementedError
 
-    @abstractmethod
+        By default, queries self.active_move_cache.
+
+        Users may override this method to provide their own caching implementation
+        or more efficient querying.
+        """
+        if state not in self.active_move_cache:
+            raise IndexError(f"Move {move} not in active moves.")
+        if move not in self.active_move_cache[state]:
+            raise IndexError(f"Move {move} not in active moves.")
+        return self.active_move_cache[state].index(move)
+
     async def len_active_moves(self, state: StateType) -> int:
         """
         Returns the number of active moves in the game state.
-        Not cached; user should provide own caching implementation.
+
+        By default, queries self.active_move_cache.
+
+        Users may override this method to provide their own caching implementation
         """
-        raise NotImplementedError
+        return len(self.active_move_cache.get(state, []))
 
     @abstractmethod
     async def require_new_move(
@@ -119,6 +128,8 @@ class Agent(Generic[GameType, StateType, MoveType],
         If the agent is unable to make any legal move at all, then it should return False.
         This indicates that the node should actually be marked terminal, and will be handled
         as a special case in the UCT algorithm.
+
+        Implementations should append to self.active_move_cache[state] to reflect the new moves.
         """
         raise NotImplementedError
 

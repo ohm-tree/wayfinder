@@ -59,7 +59,7 @@ async def crawler(
             assert leaf.value_lock.locked()
 
             # Request the value of the leaf from the agent
-            leaf.backup(await leaf.agent._value(leaf.state))
+            await leaf.backup(await leaf.agent._value(leaf.state))
         else:
             raise ValueError(
                 "Leaf should either be terminal or unvalued."

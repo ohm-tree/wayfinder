@@ -132,7 +132,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         else:
             self.parent.child_total_value[self.action_idx] = value
 
-    def terminal(self) -> bool:
+    async def terminal(self) -> bool:
         """
         Returns whether the current node is terminal.
 
@@ -140,7 +140,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         because a node is also considered terminal if the agent is unable
         to find a valid move.
         """
-        return self.impossible or self.game._terminal(self.state)
+        return self.impossible or await self.game._terminal(self.state)
 
     def reward(self) -> bool:
         """
@@ -354,7 +354,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         self.child_total_value[action_idx] = value
         self.child_number_visits[action_idx] = 0
 
-        action = await self.agent.get_active_move(action_idx)
+        action = await self.agent.get_active_move(self.state, action_idx)
         next_state = await self.game._next_state(self.state, action)
         self.children[action_idx] = UCTNode(
             agent=self.agent,
@@ -367,7 +367,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             noise=self.noise,
         )
 
-    def backup(self, estimate) -> None:
+    async def backup(self, estimate) -> None:
         """
         Propagate the estimate of the current node,
         back up along the path to the root.
@@ -379,8 +379,12 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         """
         self.initial_value = estimate
 
-        # hey, i have a value estimate now, so i can release the value lock.
-        self.value_lock.release()
+        if not await self.terminal():
+            # If i'm terminal, then I should have released the value lock a while ago.
+            # hey, i have a value estimate now, so i can release the value lock.
+            self.value_lock.release()
+        # This should execute immediately after the preceding if statement.
+        assert not self.value_lock.locked(), "Value lock is still locked."
         current = self
         while current.parent is not None:
             # Do not increment the number of visits here, because it is already done in select_leaf.

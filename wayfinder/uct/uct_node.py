@@ -10,7 +10,6 @@ import asyncio
 from typing import Any, Generic, Hashable, Iterator, Optional, TypeVar
 
 import numpy as np
-
 from wayfinder.games import *
 
 MoveType = TypeVar('MoveType', bound=Hashable)
@@ -29,7 +28,6 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                  init_type: str = "zero",
                  c: float = 1.0,
                  noise: bool = True,
-                 death_value=-1.0
                  ):
         """
         Initialize a new UCTNode.

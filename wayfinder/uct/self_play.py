@@ -32,6 +32,7 @@ async def async_self_play(
     logger: logging.Logger,
     state: StateType,
     game: GameType,
+    agent: AgentType,
     tree_kwargs: Optional[dict[str, Any]] = None,
     search_kwargs: Optional[dict[str, Any]] = None,
 ) -> SelfPlayResult:
@@ -41,8 +42,6 @@ async def async_self_play(
 
     states: list[Any] = []
     distributions: list[np.ndarray] = []
-
-    agent = Agent(game)
 
     # Send those in.
     root = UCTNode(
@@ -115,6 +114,7 @@ def self_play(
     logger: logging.Logger,
     state: StateType,
     game: GameType,
+    agent: AgentType,
     tree_kwargs: Optional[dict[str, Any]] = None,
     search_kwargs: Optional[dict[str, Any]] = None,
 ) -> SelfPlayResult:
@@ -126,6 +126,7 @@ def self_play(
             logger,
             state,
             game,
+            agent,
             tree_kwargs,
             search_kwargs
         )

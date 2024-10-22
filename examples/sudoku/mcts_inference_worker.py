@@ -14,6 +14,7 @@ from typing import Optional, Union
 import numpy as np
 
 from examples.sudoku.sudoku import SudokuGame, SudokuMove, SudokuState
+from examples.sudoku.sudoku_agent import SudokuAgent
 from examples.workers import *
 from wayfinder.uct.self_play import async_self_play
 
@@ -75,11 +76,17 @@ class MCTSWorker(Worker):
                 board=problem
             )
 
+            agent: SudokuAgent = SudokuAgent(
+                game=game,
+                worker=self
+            )
+
             states: list[SudokuState]
 
             states, distributions, rewards = await async_self_play(
                 self,
                 state=state,
+                agent=agent,
                 num_iters=self.num_iters,
                 max_actions=self.max_actions
             )

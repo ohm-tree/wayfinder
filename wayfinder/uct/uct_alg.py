@@ -68,7 +68,7 @@ async def crawler(
             last_log_time = time.time()
 
 
-class UCTSearchResult(TypedDict, Generic[GameType, StateType, AgentType]):
+class UCTSearchResult(Generic[GameType, StateType, AgentType]):
     active_moves: list[MoveType]
     visit_distribution: np.ndarray
     best_Q: float

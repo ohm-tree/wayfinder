@@ -33,8 +33,8 @@ async def async_self_play(
     state: StateType,
     game: GameType,
     agent: AgentType,
-    tree_kwargs: Optional[dict[str, Any]] = None,
-    search_kwargs: Optional[dict[str, Any]] = None,
+    tree_kwargs: dict[str, Any] = {},
+    search_kwargs: dict[str, Any] = {},
 ) -> SelfPlayResult:
     """
     Play a game using a policy, and return the game states, action distributions, and final reward.
@@ -115,8 +115,8 @@ def self_play(
     state: StateType,
     game: GameType,
     agent: AgentType,
-    tree_kwargs: Optional[dict[str, Any]] = None,
-    search_kwargs: Optional[dict[str, Any]] = None,
+    tree_kwargs: dict[str, Any] = {},
+    search_kwargs: dict[str, Any] = {},
 ) -> SelfPlayResult:
     """
     Play a game using a policy, and return the game states, action distributions, and final reward.

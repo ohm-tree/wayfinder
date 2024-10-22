@@ -60,7 +60,7 @@ MoveType = TypeVar('MoveType', bound=Hashable)
 StateType = TypeVar("StateType", bound=State)
 
 
-class Game(Generic[MoveType, StateType], ABC, Hashable):
+class Game(Generic[MoveType, StateType], ABC):
     """
     The Game class is an abstract base class
     for representing a one-player, perfect information,

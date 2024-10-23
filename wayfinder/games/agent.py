@@ -111,6 +111,18 @@ class Agent(Generic[GameType, StateType, MoveType],
         return len(self.active_move_cache.get(state, []))
 
     @abstractmethod
+    async def amount_to_request(self, state: StateType, **kwargs) -> tuple[int, Optional[int]]:
+        """
+        Returns the amount of moves to request for the given state.
+
+        The first element of the tuple is the minimum number of moves to request,
+        and the second element is the maximum number of moves to request.]
+
+        Contract: 1 <= min_num_moves <= max_num_moves <= self.max_moves(state)
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     async def require_new_move(
         self,
         state: StateType,

@@ -7,9 +7,11 @@ Nodes can be in a couple of states.
 """
 
 import asyncio
+from calendar import c
 from typing import Any, Generic, Hashable, Iterator, Optional, TypeVar
 
 import numpy as np
+
 from wayfinder.games import *
 
 MoveType = TypeVar('MoveType', bound=Hashable)
@@ -45,10 +47,9 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
         # The priors and values are obtained from a neural network every time you expand a node
         # The priors, total values, and number visits will be 0 on all illegal actions
-        # self.action_mask: Optional[np.ndarray] = None
-        self.child_priors: Optional[np.ndarray] = None
-        self.child_total_value: Optional[np.ndarray] = None
-        self.child_number_visits: Optional[np.ndarray] = None
+        self.child_priors: np.ndarray = np.zeros((0,), dtype=np.float64)
+        self.child_total_value: np.ndarray = np.zeros((0,), dtype=np.float64)
+        self.child_number_visits: np.ndarray = np.zeros((0,), dtype=np.int32)
 
         self.impossible = False
 
@@ -192,17 +193,17 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             # print("Already valued and locked")
             return
 
-        # TODO: This is custom hardcoded logic that can be replaced with a general allocator.
-        def amount_to_request(current: int, num_visits: int, max_moves: int) -> int:
-            if current < 10:
-                return (current, min(10, max_moves))
-            if current * current < num_visits:
-                return (min(current, max_moves), min(current * 2, max_moves))
-            # We don't need more
-            return (current, current)
-
-        min_request, max_request = amount_to_request(
-            len(self.children), self.number_visits, await self.agent.max_moves(self.state))
+        min_request, max_request = await self.agent.amount_to_request(
+            state=self.state,
+            current_num_children=len(self.children),
+            num_visits=self.number_visits,
+            child_num_visits=self.child_number_visits,
+            child_priors=self.child_priors,
+            child_total_value=self.child_total_value,
+            child_Q=self.child_Q(),
+            child_U=self.child_U(),
+            c=self.c
+        )
 
         # print(f"Requesting moves from {min_request} to {max_request}")
         """
@@ -351,7 +352,6 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             The value estimate of the child.
         """
         assert not action_idx in self.children, f"Child with action {action_idx} already exists."
-
 
         action = await self.agent.get_active_move(self.state, action_idx)
         next_state = await self.game._next_state(self.state, action)

@@ -10,7 +10,7 @@ Wayfinder is an MCTS implementation a la [AlphaGo](https://arxiv.org/abs/1712.01
 
 ### Development
 
-If you want to install in editable mode locally, my understanding is that due to (recent changes in pip)[https://github.com/mne-tools/mne-python/issues/12169] you need to run the following command instead of `pip install -e .`:
+If you want to install in editable mode locally, my understanding is that due to recent changes in pip you need to run the following command instead of `pip install -e .`:
 
 ```bash
 pip install --config-settings editable-mode=strict -e .

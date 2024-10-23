@@ -223,7 +223,9 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             expand_initial_value=self.expand_initial_value,
         )
 
-        # print(f"Requesting moves from {min_request} to {max_request}")
+        if max_request is None:
+            max_request = min_request
+
         """
         Temporarily flag the node as unavailable to prevent multiple requests for new moves.
         Critical section is only activated conditioned on actually making this request.

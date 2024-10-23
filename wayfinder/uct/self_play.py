@@ -94,7 +94,7 @@ async def async_self_play(
 
         root = root.children[action_idx]
         # set root parent to None so that it knows it is the root.
-        root.root()
+        await root.root()
         states.append(root.state)
 
     logger.info("Move: " + str(move_count))

@@ -74,7 +74,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         self.value_lock = asyncio.Lock()
         self.move_lock = asyncio.Lock()
 
-    def root(self) -> None:
+    async def root(self) -> None:
         """
         Set the parent of the node to None.
         """
@@ -89,7 +89,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         self.parent = None
         self.action_idx = -1
 
-        self.game.make_root(self.state)
+        await self.game.make_root(self.state)
 
     @property
     def valued(self) -> bool:

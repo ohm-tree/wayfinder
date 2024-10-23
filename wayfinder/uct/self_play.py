@@ -112,7 +112,8 @@ async def async_self_play(
     return {
         "states": states,
         "distributions": distributions,
-        "rewards": rewards
+        "rewards": rewards,
+        "result": final_reward
     }
 
 

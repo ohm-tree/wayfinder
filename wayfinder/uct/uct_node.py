@@ -101,6 +101,25 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         return self.initial_value is not None
 
     @property
+    def expand_initial_value(self) -> float:
+        """        
+        Recommended by minigo which cites Leela.
+        See https://github.com/tensorflow/minigo/blob/master/cc/mcts_tree.cc line 448.
+        See https://www.reddit.com/r/cbaduk/comments/8j5x3w/first_play_urgency_fpu_parameter_in_alpha_zero/
+        """
+
+        value = 0
+
+        if self.init_type == "zero":
+            value = 0
+        if self.init_type == "value":
+            value = self.initial_value
+        if self.init_type == "offset":
+            value = self.initial_value - 0.1
+
+        return value
+
+    @property
     def expanded(self) -> bool:
         """
         Returns whether the node has been expanded.
@@ -180,8 +199,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         current node has been visited N times.
         """
 
-        # print("Inside request moves")
-        # assert not self.unavailable, "Cannot request moves from an unavailable node."
+        assert self.valued, "Cannot request moves from an unvalued node."
 
         if self.expanded and self.move_lock.locked():
             """
@@ -190,7 +208,6 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             ourselves, but there's no need to wait for the request to finish; we can just
             branch to the available child.
             """
-            # print("Already valued and locked")
             return
 
         min_request, max_request = await self.agent.amount_to_request(
@@ -202,7 +219,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             child_total_value=self.child_total_value,
             child_Q=self.child_Q(),
             child_U=self.child_U(),
-            c=self.c
+            c=self.c,
+            expand_initial_value=self.expand_initial_value,
         )
 
         # print(f"Requesting moves from {min_request} to {max_request}")
@@ -300,34 +318,12 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         assert self.initial_value is not None, "Node has not been backed up, so I don't know the initial NN value."
         assert self.valued, "Node has not been valued."
 
-        # Recommended by minigo which cites Leela.
-        # See https://github.com/tensorflow/minigo/blob/master/cc/mcts_tree.cc line 448.
-        # See https://www.reddit.com/r/cbaduk/comments/8j5x3w/first_play_urgency_fpu_parameter_in_alpha_zero/
-        value = 0
-
-        if self.init_type == "zero":
-            value = 0
-        if self.init_type == "value":
-            value = self.initial_value
-        if self.init_type == "offset":
-            value = self.initial_value - 0.1
+        value = self.expand_initial_value
 
         old_length = len(self.children)
         new_length = await self.agent.len_active_moves(self.state)
         assert new_length >= old_length, "New length is less than old length."
         assert new_length > 0, "New length is 0."
-        # copy all old data
-        # if old_length > 0:
-        #     self.child_priors = np.concatenate(
-        #         [self.child_priors, np.zeros(new_length - old_length)])
-        #     self.child_total_value = np.concatenate(
-        #         [self.child_total_value, np.zeros(new_length - old_length)])
-        #     self.child_number_visits = np.concatenate(
-        #         [self.child_number_visits, np.zeros(new_length - old_length)])
-        # else:
-        #     self.child_priors = np.zeros(new_length)
-        #     self.child_total_value = np.zeros(new_length)
-        #     self.child_number_visits = np.zeros(new_length)
 
         for action_idx in range(old_length, new_length):
             move = await self.agent.get_active_move(self.state, action_idx)

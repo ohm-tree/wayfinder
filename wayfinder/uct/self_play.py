@@ -85,6 +85,7 @@ async def async_self_play(
 
         if winning_node is not None:
             root = winning_node
+            states.append(winning_node.state)
             break
         distributions.append(distribution)
         logger.info(f"Action distribution: {distribution}")

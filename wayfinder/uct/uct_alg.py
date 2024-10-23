@@ -51,7 +51,7 @@ async def crawler(
             # Immediately backup the value estimate along the path to the root
             await leaf.backup(await leaf.reward())
 
-            if (await leaf.game._reward(leaf.state)):
+            if (await leaf.game.victorious(leaf.state)):
                 shared_state.victorious_death = True
                 shared_state.winning_node = leaf
 

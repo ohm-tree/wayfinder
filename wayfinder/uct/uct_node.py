@@ -288,7 +288,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
         Queries self.agent for the policy estimate of all of the children.
         """
-        print("Inside expand")
+        # print("Inside expand")
 
         assert self.move_lock, "expand() called without critical section protection."
 

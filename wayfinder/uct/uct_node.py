@@ -209,7 +209,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         Two cases: if not self.expanded, then we need to wait no matter what.
         if we're expanded but it was unlocked, we will obtain the lock immediately and request moves.
         """
-        if len(self.children) < min_request:
+        if len(self.children) < max_request:
             # print("Requesting moves")
             async with self.move_lock:
                 # print("Inside critical section")

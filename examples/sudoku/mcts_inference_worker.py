@@ -83,14 +83,16 @@ class MCTSWorker(Worker):
 
             states: list[SudokuState]
 
-            states, distributions, rewards = await async_self_play(
+            res = await async_self_play(
                 self,
                 state=state,
                 agent=agent,
                 num_iters=self.num_iters,
                 max_actions=self.max_actions
             )
-
+            states = res['states']
+            distributions = res['distributions']
+            rewards = res['rewards']
             SudokuState.saves(states, os.path.join(
                 self.game_data_path, f"{problem['name']}_states.npy"))
 

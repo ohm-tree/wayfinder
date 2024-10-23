@@ -198,6 +198,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 return (current, min(10, max_moves))
             if current * current < num_visits:
                 return (min(current, max_moves), min(current * 2, max_moves))
+            # We don't need more
+            return (current, current)
 
         min_request, max_request = amount_to_request(
             len(self.children), self.number_visits, await self.agent.max_moves(self.state))

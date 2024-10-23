@@ -7,7 +7,9 @@ This returns the game states and action distributions, as well as the final resu
 """
 
 import asyncio
+from importlib.metadata import distribution
 import logging
+from math import dist
 from typing import Any, Generic, Hashable, Iterator, Optional, TypedDict, TypeVar
 
 import numpy as np
@@ -65,11 +67,14 @@ async def async_self_play(
         TODO: Fast Playouts would be implemented here.
         """
         winning_node: UCTNode
-        distribution, _, winning_node = await async_uct_search(
+        res = await async_uct_search(
             logger=logger,
             root=root,
             **search_kwargs
         )
+        active_moves = res["active_moves"]
+        distribution = res["visit_distribution"]
+        winning_node = res["winning_node"]
 
         # TODO: more configurations possible for uct_search, not used right now.
 
@@ -84,8 +89,9 @@ async def async_self_play(
         distributions.append(distribution)
         logger.info(f"Action distribution: {distribution}")
 
-        action = np.random.choice(len(distribution), p=distribution)
-        root = root.children[action]
+        action_idx = np.random.choice(len(distribution), p=distribution)
+
+        root = root.children[action_idx]
         # set root parent to None so that it knows it is the root.
         root.root()
         states.append(root.state)

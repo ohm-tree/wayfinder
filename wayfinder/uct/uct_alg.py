@@ -49,7 +49,7 @@ async def crawler(
 
         if (await leaf.terminal()):
             # Immediately backup the value estimate along the path to the root
-            leaf.backup(await leaf.reward())
+            await leaf.backup(await leaf.reward())
 
             if (await leaf.game._reward(leaf.state)):
                 shared_state.victorious_death = True
@@ -103,7 +103,7 @@ async def async_uct_search(
     await asyncio.gather(*crawlers)
 
     return {
-        "active_moves": root.agent.active_moves(root.state),
+        "active_moves": await root.agent.active_moves(root.state),
         "visit_distribution": root.child_number_visits / np.sum(root.child_number_visits),
         "best_Q": root.child_Q()[root.child_number_visits.argmax()],
         "winning_node": shared_state.winning_node

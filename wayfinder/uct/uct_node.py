@@ -314,17 +314,17 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         assert new_length >= old_length, "New length is less than old length."
         assert new_length > 0, "New length is 0."
         # copy all old data
-        if old_length > 0:
-            self.child_priors = np.concatenate(
-                [self.child_priors, np.zeros(new_length - old_length)])
-            self.child_total_value = np.concatenate(
-                [self.child_total_value, np.zeros(new_length - old_length)])
-            self.child_number_visits = np.concatenate(
-                [self.child_number_visits, np.zeros(new_length - old_length)])
-        else:
-            self.child_priors = np.zeros(new_length)
-            self.child_total_value = np.zeros(new_length)
-            self.child_number_visits = np.zeros(new_length)
+        # if old_length > 0:
+        #     self.child_priors = np.concatenate(
+        #         [self.child_priors, np.zeros(new_length - old_length)])
+        #     self.child_total_value = np.concatenate(
+        #         [self.child_total_value, np.zeros(new_length - old_length)])
+        #     self.child_number_visits = np.concatenate(
+        #         [self.child_number_visits, np.zeros(new_length - old_length)])
+        # else:
+        #     self.child_priors = np.zeros(new_length)
+        #     self.child_total_value = np.zeros(new_length)
+        #     self.child_number_visits = np.zeros(new_length)
 
         for action_idx in range(old_length, new_length):
             move = await self.agent.get_active_move(self.state, action_idx)
@@ -350,12 +350,24 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         """
         assert not action_idx in self.children, f"Child with action {action_idx} already exists."
 
-        self.child_priors[action_idx] = prior
-        self.child_total_value[action_idx] = value
-        self.child_number_visits[action_idx] = 0
 
         action = await self.agent.get_active_move(self.state, action_idx)
         next_state = await self.game._next_state(self.state, action)
+
+        # append to these numpy arrays
+
+        # This is all done over here, so that everything happens atomically;
+        # else in best_child, we might end up with a P or U value that doesn't
+        # correspond to an element of self.children.
+        if self.child_priors is None:
+            self.child_priors = np.array([prior])
+            self.child_total_value = np.array([value])
+            self.child_number_visits = np.array([0])
+        else:
+            self.child_priors = np.append(self.child_priors, [prior])
+            self.child_total_value = np.append(self.child_total_value, [value])
+            self.child_number_visits = np.append(self.child_number_visits, [0])
+
         self.children[action_idx] = UCTNode(
             agent=self.agent,
             game=self.game,

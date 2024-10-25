@@ -7,8 +7,8 @@ This returns the game states and action distributions, as well as the final resu
 """
 
 import asyncio
-from importlib.metadata import distribution
 import logging
+from importlib.metadata import distribution
 from math import dist
 from typing import Any, Generic, Hashable, Iterator, Optional, TypedDict, TypeVar
 
@@ -28,6 +28,8 @@ class SelfPlayResult(TypedDict):
     states: list[Any]
     distributions: list[np.ndarray]
     rewards: list[float]
+    result: float
+    tree_diagnostics: list[str]
 
 
 async def async_self_play(
@@ -54,6 +56,8 @@ async def async_self_play(
         parent=None,
         **tree_kwargs
     )
+
+    tree_diagnostics = []
 
     states.append(root.state)
 
@@ -82,11 +86,13 @@ async def async_self_play(
         TODO: In MCTS algorithms, people sometimes change up the temperature right here,
         to sharpen the training distribution. This is something we could try.
         """
+        tree_diagnostics.append(await root.print_tree())
 
         if winning_node is not None:
             root = winning_node
             states.append(winning_node.state)
             break
+
         distributions.append(distribution)
         logger.info(f"Action distribution: {distribution}")
 
@@ -114,7 +120,8 @@ async def async_self_play(
         "states": states,
         "distributions": distributions,
         "rewards": rewards,
-        "result": final_reward
+        "result": final_reward,
+        "tree_diagnostics": tree_diagnostics
     }
 
 

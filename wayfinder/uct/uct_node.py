@@ -434,24 +434,26 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 }
             }
         """
-        # make sure you're calling this from the root
-        if self.parent is not None:
-            raise ValueError("get_current_tree_structure() must be called from the root node.")
+        # # make sure you're calling this from the root
+        # if self.parent is not None:
+        #     raise ValueError(
+        #         "get_current_tree_structure() must be called from the root node.")
 
         tree = {
-            "action_idx": self.action_idx, # the action that led to this node; -1 if root
-            "number_visits": self.number_visits, # number of times this node has been visited
-            "total_value": self.total_value, # total value of this node
-            "initial_value": self.initial_value, # initial value of this node
-            "impossible": self.impossible, # whether this node is impossible
-            "children": {} # children of this node. the key is the action index, and the value is the representation of the child subtree
+            "action_idx": self.action_idx,  # the action that led to this node; -1 if root
+            # number of times this node has been visited
+            "number_visits": self.number_visits,
+            "total_value": self.total_value,  # total value of this node
+            "initial_value": self.initial_value,  # initial value of this node
+            "impossible": self.impossible,  # whether this node is impossible
+            "children": {}  # children of this node. the key is the action index, and the value is the representation of the child subtree
         }
 
         for action_idx, child in self.children.items():
             tree["children"][action_idx] = await child.get_current_tree_structure()
 
         return tree
-    
+
     async def labels_from_dict_repr(self, dict_repr) -> list:
         '''
         Generate a list of labels of all nodes in the tree.
@@ -482,7 +484,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             }
             }
         }
-            
+
         Then the labels would be:
         [
             "",
@@ -494,10 +496,11 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             "1.1."
         ]
         '''
-        # assert you're calling this from the root
-        if self.parent is not None:
-            raise ValueError("get_tree_node_labels() must be called from the root node.")
-            
+        # # assert you're calling this from the root
+        # if self.parent is not None:
+        #     raise ValueError(
+        #         "get_tree_node_labels() must be called from the root node.")
+
         ret = []
 
         def dfs(node, label):
@@ -507,14 +510,14 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
 
         dfs(dict_repr, "")
         return ret
-    
-    async def get_current_tree_structure(self, print=False) -> dict:
+
+    async def get_current_tree_structure(self, debug=False) -> dict:
         '''
         returns the adjacency list of the tree structure, mapping labels to labels of children
         '''
         dict_repr = await self.get_tree_structure_dict_repr()
         labels = await self.labels_from_dict_repr(dict_repr)
-        if print:
+        if debug:
             print(f"Labels of all nodes in the tree: {labels}")
         ret = {label: [] for label in labels}
         for label in labels:
@@ -522,15 +525,17 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 parent = label[:-2]
                 ret[parent].append(label)
         return ret
-    
-    async def print_tree(self) -> None:
+
+    async def print_tree(self) -> str:
         '''
         Print the tree structure.
         '''
-        tree = await self.get_current_tree_structure(print=True)
+        tree = await self.get_current_tree_structure(debug=False)
+        res = ""
         for parent, children in tree.items():
-            print(f"{parent}: {children}")
-        
+            res += f"{parent}: {children}\n"
+        return res
+
 
 async def dirichlet_noise(action_mask, alpha) -> np.ndarray:
     """

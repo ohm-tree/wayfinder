@@ -217,6 +217,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         if we're expanded but it was unlocked, we will obtain the lock immediately and request moves.
         """
         async with self.move_lock:
+            await self.expand()
+
             min_request, max_request = await self.agent.amount_to_request(
                 state=self.state,
                 current_num_children=len(self.children),
@@ -245,6 +247,8 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                     # In this edge case, the agent is unable to find any legal moves.
                     # We should mark this node as terminal.
                     self.impossible = True
+
+            assert await self.agent.len_active_moves(self.state) > 0, "No active moves available."
 
     def best_child(self) -> 'UCTNode[GameType, StateType, AgentType]':
         """
@@ -325,7 +329,7 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         old_length = len(self.children)
         new_length = await self.agent.len_active_moves(self.state)
         assert new_length >= old_length, "New length is less than old length."
-        assert new_length > 0, "New length is 0."
+        # assert new_length > 0, "New length is 0."
 
         for action_idx in range(old_length, new_length):
             move = await self.agent.get_active_move(self.state, action_idx)

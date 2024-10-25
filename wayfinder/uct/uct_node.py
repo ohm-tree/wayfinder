@@ -210,31 +210,31 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             """
             return
 
-        min_request, max_request = await self.agent.amount_to_request(
-            state=self.state,
-            current_num_children=len(self.children),
-            num_visits=self.number_visits,
-            child_num_visits=self.child_number_visits,
-            child_priors=self.child_priors,
-            child_total_value=self.child_total_value,
-            child_Q=self.child_Q(),
-            child_U=self.child_U(),
-            c=self.c,
-            expand_initial_value=self.expand_initial_value,
-        )
-
-        if max_request is None:
-            max_request = min_request
-
         """
         Temporarily flag the node as unavailable to prevent multiple requests for new moves.
         Critical section is only activated conditioned on actually making this request.
         Two cases: if not self.expanded, then we need to wait no matter what.
         if we're expanded but it was unlocked, we will obtain the lock immediately and request moves.
         """
-        if len(self.children) < max_request:
-            # print("Requesting moves")
-            async with self.move_lock:
+        async with self.move_lock:
+            min_request, max_request = await self.agent.amount_to_request(
+                state=self.state,
+                current_num_children=len(self.children),
+                num_visits=self.number_visits,
+                child_num_visits=self.child_number_visits,
+                child_priors=self.child_priors,
+                child_total_value=self.child_total_value,
+                child_Q=self.child_Q(),
+                child_U=self.child_U(),
+                c=self.c,
+                expand_initial_value=self.expand_initial_value,
+            )
+
+            if max_request is None:
+                max_request = min_request
+
+            if len(self.children) < max_request:
+                # print("Requesting moves")
                 # print("Inside critical section")
                 success = await self.agent.require_new_move(self.state, min_request, max_request)
                 if success:

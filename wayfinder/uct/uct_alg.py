@@ -26,6 +26,7 @@ class crawler_shared_state:
         self.victorious_death = False
         self.winning_node = None
         self.iters = 0
+        self.start_time = time.time()
 
 
 async def crawler(
@@ -33,6 +34,7 @@ async def crawler(
     root: UCTNode[GameType, StateType, AgentType],
     shared_state: crawler_shared_state,
     num_iters: int = 100,
+    search_time_limit: Optional[float] = None,
     min_log_delta: float = 10.0,  # 10 seconds between logging to not spam the logs
 ) -> None:
     """
@@ -41,7 +43,8 @@ async def crawler(
     last_log_time = time.time()
 
     # while not victorious_death and iters < num_iters:
-    while shared_state.victorious_death is False and shared_state.iters < num_iters:
+    while shared_state.victorious_death is False and shared_state.iters < num_iters and \
+            (search_time_limit is None or time.time() - shared_state.start_time < search_time_limit):
         shared_state.iters += 1
 
         # greedily select leaf with given exploration parameter
@@ -79,6 +82,7 @@ async def async_uct_search(
     logger: logging.Logger,
     root: UCTNode[GameType, StateType, AgentType],
     num_iters: int = 100,
+    search_time_limit: Optional[float] = None,
 ) -> UCTSearchResult[GameType, StateType, AgentType]:
     """
     Perform num_iters iterations of the UCT algorithm from the given game state
@@ -98,6 +102,7 @@ async def async_uct_search(
             root=root,
             shared_state=shared_state,
             num_iters=num_iters,
+            search_time_limit=search_time_limit,
         ))
 
     await asyncio.gather(*crawlers)
@@ -114,6 +119,7 @@ def uct_search(
     logger: logging.Logger,
     root: UCTNode[GameType, StateType, AgentType],
     num_iters: int,
+    search_time_limit: Optional[float] = None,
     train: bool = True,
 ) -> UCTSearchResult[GameType, StateType, AgentType]:
     """
@@ -127,6 +133,7 @@ def uct_search(
             logger,
             root,
             num_iters,
+            search_time_limit,
             train
         )
     )

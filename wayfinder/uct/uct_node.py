@@ -408,6 +408,129 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
             current.total_value += estimate - self.game.death_value
             current = current.parent
 
+    async def get_tree_structure_dict_repr(self) -> dict:
+        """
+        Get the current tree structure.
+
+        Parameters:
+        ----------
+        force_root: bool
+            Whether to print the tree from the root.
+
+        Returns:
+        --------
+        tree: dict
+            A dictionary representation of the tree. e.g. 
+            {
+                "A": {
+                    "B": {
+                        "D": {},
+                        "E": {}
+                    },
+                    "C": {
+                        "F": {},
+                        "G": {}
+                    }
+                }
+            }
+        """
+        # make sure you're calling this from the root
+        if self.parent is not None:
+            raise ValueError("get_current_tree_structure() must be called from the root node.")
+
+        tree = {
+            "action_idx": self.action_idx, # the action that led to this node; -1 if root
+            "number_visits": self.number_visits, # number of times this node has been visited
+            "total_value": self.total_value, # total value of this node
+            "initial_value": self.initial_value, # initial value of this node
+            "impossible": self.impossible, # whether this node is impossible
+            "children": {} # children of this node. the key is the action index, and the value is the representation of the child subtree
+        }
+
+        for action_idx, child in self.children.items():
+            tree["children"][action_idx] = await child.get_current_tree_structure()
+
+        return tree
+    
+    async def labels_from_dict_repr(self, dict_repr) -> list:
+        '''
+        Generate a list of labels of all nodes in the tree.
+        Each label is a string of the form "0.3.2.3. ..." as a record of which actions you take to get here from the root.
+
+        Example: if the current tree dict repr is:
+        {
+            "children": {
+            "0": {
+                "children": {
+                "0": {
+                    "children": {}
+                },
+                "1": {
+                    "children": {}
+                }
+                }
+            },
+            "1": {
+                "children": {
+                "0": {
+                    "children": {}
+                },
+                "1": {
+                    "children": {}
+                }
+                }
+            }
+            }
+        }
+            
+        Then the labels would be:
+        [
+            "",
+            "0.",
+            "1.",
+            "0.0.",
+            "0.1.",
+            "1.0.",
+            "1.1."
+        ]
+        '''
+        # assert you're calling this from the root
+        if self.parent is not None:
+            raise ValueError("get_tree_node_labels() must be called from the root node.")
+            
+        ret = []
+
+        def dfs(node, label):
+            ret.append(label)
+            for action_idx, child in node["children"].items():
+                dfs(child, label + str(action_idx) + ".")
+
+        dfs(dict_repr, "")
+        return ret
+    
+    async def get_current_tree_structure(self, print=False) -> dict:
+        '''
+        returns the adjacency list of the tree structure, mapping labels to labels of children
+        '''
+        dict_repr = await self.get_tree_structure_dict_repr()
+        labels = await self.labels_from_dict_repr(dict_repr)
+        if print:
+            print(f"Labels of all nodes in the tree: {labels}")
+        ret = {label: [] for label in labels}
+        for label in labels:
+            if label:
+                parent = label[:-2]
+                ret[parent].append(label)
+        return ret
+    
+    async def print_tree(self) -> None:
+        '''
+        Print the tree structure.
+        '''
+        tree = await self.get_current_tree_structure(print=True)
+        for parent, children in tree.items():
+            print(f"{parent}: {children}")
+        
 
 async def dirichlet_noise(action_mask, alpha) -> np.ndarray:
     """

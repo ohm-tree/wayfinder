@@ -450,9 +450,24 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
         }
 
         for action_idx, child in self.children.items():
-            tree["children"][action_idx] = await child.get_current_tree_structure()
+            tree["children"][action_idx] = await child.get_tree_structure_dict_repr()
 
         return tree
+
+    async def get_current_tree_structure(self, debug=False) -> dict:
+        '''
+        returns the adjacency list of the tree structure, mapping labels to labels of children
+        '''
+        dict_repr = await self.get_tree_structure_dict_repr()
+        labels = await self.labels_from_dict_repr(dict_repr)
+        if debug:
+            print(f"Labels of all nodes in the tree: {labels}")
+        ret = {label: [] for label in labels}
+        for label in labels:
+            if label:
+                parent = label[:-2]
+                ret[parent].append(label)
+        return ret
 
     async def labels_from_dict_repr(self, dict_repr) -> list:
         '''
@@ -509,21 +524,6 @@ class UCTNode(Generic[GameType, StateType, AgentType]):
                 dfs(child, label + str(action_idx) + ".")
 
         dfs(dict_repr, "")
-        return ret
-
-    async def get_current_tree_structure(self, debug=False) -> dict:
-        '''
-        returns the adjacency list of the tree structure, mapping labels to labels of children
-        '''
-        dict_repr = await self.get_tree_structure_dict_repr()
-        labels = await self.labels_from_dict_repr(dict_repr)
-        if debug:
-            print(f"Labels of all nodes in the tree: {labels}")
-        ret = {label: [] for label in labels}
-        for label in labels:
-            if label:
-                parent = label[:-2]
-                ret[parent].append(label)
         return ret
 
     async def print_tree(self) -> str:

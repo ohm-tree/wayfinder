@@ -10,7 +10,7 @@ GameType = TypeVar('GameType', bound=Game[MoveType, StateType])
 AgentType = TypeVar('AgentType', bound=Agent[GameType, StateType, MoveType])
 
 
-class TreeDiagnostics(Generic[MoveType, StateType, GameType, AgentType]):
+class TreeDiagnostics(Generic[GameType, StateType, AgentType]):
     def __init__(
             self,
             game: GameType,
@@ -22,7 +22,7 @@ class TreeDiagnostics(Generic[MoveType, StateType, GameType, AgentType]):
 
     def _node_to_string(
         self,
-        node: UCTNode[MoveType, StateType, GameType, AgentType],
+        node: UCTNode[GameType, StateType, AgentType],
         depth: int,
         index_path
     ):
@@ -63,7 +63,7 @@ class TreeDiagnostics(Generic[MoveType, StateType, GameType, AgentType]):
 
     def tree_to_string(
         self,
-        node: UCTNode[MoveType, StateType, GameType, AgentType],
+        node: UCTNode[GameType, StateType, AgentType],
         depth: int = 0,
         index_path=()
     ):

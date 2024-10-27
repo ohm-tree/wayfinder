@@ -82,6 +82,7 @@ async def async_uct_search(
     logger: logging.Logger,
     root: UCTNode[GameType, StateType, AgentType],
     num_iters: int = 100,
+    num_crawlers: int = 10,
     search_time_limit: Optional[float] = None,
 ) -> UCTSearchResult[GameType, StateType, AgentType]:
     """
@@ -93,10 +94,9 @@ async def async_uct_search(
 
     shared_state = crawler_shared_state()
 
-    # start up 10 crawlers
-    # TODO: make the number of crawlers a search parameter
+    # start up num_crawlers crawlers
     crawlers = []
-    for _ in range(10):
+    for _ in range(num_crawlers):
         crawlers.append(crawler(
             logger=logger,
             root=root,
@@ -119,6 +119,7 @@ def uct_search(
     logger: logging.Logger,
     root: UCTNode[GameType, StateType, AgentType],
     num_iters: int,
+    num_crawlers: int = 10,
     search_time_limit: Optional[float] = None,
     train: bool = True,
 ) -> UCTSearchResult[GameType, StateType, AgentType]:
@@ -133,6 +134,7 @@ def uct_search(
             logger,
             root,
             num_iters,
+            num_crawlers,
             search_time_limit,
             train
         )

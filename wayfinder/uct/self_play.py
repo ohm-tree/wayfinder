@@ -15,6 +15,7 @@ from typing import Any, Generic, Hashable, Iterator, Optional, TypedDict, TypeVa
 import numpy as np
 
 from wayfinder.games import *
+from wayfinder.uct.tree_diagnostics import TreeDiagnostics
 from wayfinder.uct.uct_alg import async_uct_search
 from wayfinder.uct.uct_node import UCTNode
 
@@ -29,7 +30,7 @@ class SelfPlayResult(TypedDict):
     distributions: list[np.ndarray]
     rewards: list[float]
     result: float
-    tree_diagnostics: list[str]
+    tree_diagnostics: Optional[list[str]]
 
 
 async def async_self_play(
@@ -37,11 +38,33 @@ async def async_self_play(
     state: StateType,
     game: GameType,
     agent: AgentType,
+    # Dopamine, but may incur some memory.
+    return_tree_diagnostics: bool = True,
     tree_kwargs: dict[str, Any] = {},
     search_kwargs: dict[str, Any] = {},
 ) -> SelfPlayResult:
     """
-    Play a game using a policy, and return the game states, action distributions, and final reward.
+    Main asynchronous outer-loop for self-play.
+
+    Each iteration, runs a full tree search, then selects an action based on the visit distribution
+    and permanently plays the action in the game.
+
+    Parameters:
+    ------------
+    logger: logging.Logger
+        Logger for logging information.
+    state: StateType
+        The initial state of the game.
+    game: GameType
+        The game instance.
+    agent: AgentType
+        The agent instance.
+    return_tree_diagnostics: bool
+        Whether to return tree diagnostics.
+    tree_kwargs: dict[str, Any]
+        Additional arguments for the tree, passed into UCTNode constructor.
+    search_kwargs: dict[str, Any]
+        Additional arguments for the search, passed into async_uct_search.
     """
 
     states: list[Any] = []
@@ -57,7 +80,11 @@ async def async_self_play(
         **tree_kwargs
     )
 
-    tree_diagnostics = []
+    if return_tree_diagnostics:
+        tree_diagnostics = []
+        diagnostics = TreeDiagnostics(
+            game=game
+        )
 
     states.append(root.state)
 
@@ -86,7 +113,8 @@ async def async_self_play(
         TODO: In MCTS algorithms, people sometimes change up the temperature right here,
         to sharpen the training distribution. This is something we could try.
         """
-        tree_diagnostics.append(await root.print_tree())
+        if return_tree_diagnostics:
+            tree_diagnostics.append(diagnostics.tree_to_string(root))
 
         if winning_node is not None:
             root = winning_node
@@ -121,7 +149,7 @@ async def async_self_play(
         "distributions": distributions,
         "rewards": rewards,
         "result": final_reward,
-        "tree_diagnostics": tree_diagnostics
+        "tree_diagnostics": tree_diagnostics if return_tree_diagnostics else None
     }
 
 
@@ -130,11 +158,18 @@ def self_play(
     state: StateType,
     game: GameType,
     agent: AgentType,
+    return_tree_diagnostics: bool = True,
     tree_kwargs: dict[str, Any] = {},
     search_kwargs: dict[str, Any] = {},
 ) -> SelfPlayResult:
     """
-    Play a game using a policy, and return the game states, action distributions, and final reward.
+    Syncronous wrapper for async_self_play.
+
+    (We do not usually use this, because our projects are usually
+    set up to make asynchronous process-external queries, hence there
+    is already global asyncio loop running external to async_self_play).
+
+    See async_self_play for details.
     """
     return asyncio.run(
         async_self_play(
@@ -142,6 +177,7 @@ def self_play(
             state,
             game,
             agent,
+            return_tree_diagnostics,
             tree_kwargs,
             search_kwargs
         )
